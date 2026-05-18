@@ -1,0 +1,24 @@
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+    restart: unless-stopped
+
+  agents:
+    image: python:3.11-slim
+    command: sleep infinity
+    ports:
+      - "8000:8000"
+    working_dir: /app
+    volumes:
+      - ./agents:/app
+
+volumes:
+  n8n_data:
