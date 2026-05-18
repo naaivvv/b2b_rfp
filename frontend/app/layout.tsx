@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Toaster } from "sonner";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,6 +36,7 @@ export default function RootLayout({
           </header>
           <main className="mx-auto max-w-5xl px-6 py-10">{children}</main>
         </div>
+        <Toaster richColors />
       </body>
     </html>
   );

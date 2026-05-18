@@ -1,0 +1,317 @@
+{
+  "name": "RFP Response Architect Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rfp-upload",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "4f1b1d71-3de5-4fbb-bb13-ec116a552d1f",
+      "name": "Webhook - Receive Upload",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        0
+      ],
+      "notes": "Receives the POST from Next.js after a PDF is uploaded. Expected JSON body: { rfp_id, storage_path, file_name }."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "rfp_documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.body.rfp_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "processing"
+            }
+          ]
+        }
+      },
+      "id": "6708bc81-2bc1-43fb-ab10-c2cc93885a68",
+      "name": "Supabase - Mark Processing",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -720,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_WITH_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Service Role"
+        }
+      },
+      "notes": "Updates rfp_documents.status from uploaded to processing for the incoming rfp_id."
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL + '/storage/v1/object/sign/rfp-uploads/' + $('Webhook - Receive Upload').item.json.body.storage_path }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{ \"expiresIn\": 3600 }",
+        "options": {}
+      },
+      "id": "e7d875e4-61ee-4543-8d1c-cf1843a32856",
+      "name": "HTTP - Create Signed URL",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -480,
+        0
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_SUPABASE_HEADER_AUTH_ID",
+          "name": "Supabase Service Role Header"
+        }
+      },
+      "notes": "Creates a short-lived signed Supabase Storage URL for the private PDF object in the rfp-uploads bucket."
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SUPABASE_URL + $json.signedURL }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file",
+              "outputPropertyName": "rfp_pdf"
+            }
+          }
+        }
+      },
+      "id": "1bdcc534-d0e6-4f74-9f75-b38164272634",
+      "name": "HTTP - Download PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -240,
+        0
+      ],
+      "notes": "Downloads the PDF bytes from Supabase Storage using the signed URL. The binary output is stored as rfp_pdf."
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "rfp_pdf",
+        "options": {}
+      },
+      "id": "0ecf35fc-633b-4ec2-92be-dfe932456d16",
+      "name": "Extract From File - PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "notes": "Extracts raw text from the downloaded PDF so FastAPI can receive the current /process-rfp contract: { rfp_text, rfp_id }."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.FASTAPI_URL + '/process-rfp' }}",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ JSON.stringify({ rfp_id: $('Webhook - Receive Upload').item.json.body.rfp_id, rfp_text: $json.text }) }}",
+        "options": {}
+      },
+      "id": "84aaac71-cf0c-407b-98a0-df89376f84e9",
+      "name": "HTTP - Run FastAPI Crew",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "notes": "Posts the extracted rfp_text and original rfp_id to FastAPI /process-rfp. FastAPI runs the CrewAI Analyst, Retriever, and Writer sequence."
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "tableId": "proposals",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "rfp_id",
+              "fieldValue": "={{ $json.rfp_id }}"
+            },
+            {
+              "fieldId": "draft_markdown",
+              "fieldValue": "={{ $json.draft_markdown }}"
+            },
+            {
+              "fieldId": "edited_content",
+              "fieldValue": "={{ $json.draft_markdown }}"
+            },
+            {
+              "fieldId": "version",
+              "fieldValue": "1"
+            }
+          ]
+        }
+      },
+      "id": "12d5aac9-7f32-4ffc-9400-956b626fce4b",
+      "name": "Supabase - Insert Proposal",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        480,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_WITH_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Service Role"
+        }
+      },
+      "notes": "Creates the proposal record from the FastAPI result, storing the Writer Agent Markdown as both draft_markdown and the initial edited_content."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "rfp_documents",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook - Receive Upload').item.json.body.rfp_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "draft_ready"
+            }
+          ]
+        }
+      },
+      "id": "9ae49d10-72a3-4bcb-83b7-4f16adfc2413",
+      "name": "Supabase - Mark Draft Ready",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        720,
+        0
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "REPLACE_WITH_SUPABASE_CREDENTIAL_ID",
+          "name": "Supabase Service Role"
+        }
+      },
+      "notes": "Confirms the proposal row has been inserted and leaves rfp_documents.status as draft_ready for dashboard display."
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook - Receive Upload": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Mark Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Mark Processing": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Create Signed URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Create Signed URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Download PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Download PDF": {
+      "main": [
+        [
+          {
+            "node": "Extract From File - PDF Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract From File - PDF Text": {
+      "main": [
+        [
+          {
+            "node": "HTTP - Run FastAPI Crew",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP - Run FastAPI Crew": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Insert Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Insert Proposal": {
+      "main": [
+        [
+          {
+            "node": "Supabase - Mark Draft Ready",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase - Mark Draft Ready": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "31282da0-e084-4ce4-8b20-1d4d63fcf7a0",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "id": "rfp-response-architect-pipeline",
+  "tags": []
+}
