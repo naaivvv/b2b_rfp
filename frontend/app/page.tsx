@@ -154,7 +154,7 @@ export default function HomePage() {
   const ActiveKnowledgeIcon = activeKnowledgeSource.icon;
 
   return (
-    <div className="relative left-1/2 -my-10 w-screen -translate-x-1/2 overflow-hidden bg-background">
+    <div className="relative left-1/2 -my-10 -ml-[50vw] w-screen overflow-x-hidden bg-background">
       <FlowArt aria-label="RFP Response Architect landing page">
         <FlowSection
           aria-label="Autonomous RFP Command Center"
