@@ -62,18 +62,23 @@ def _parse_requirements(output: Any) -> dict[str, Any]:
 
 
 def run_crew(rfp_text: str) -> CrewRunResult:
+  # Truncate to avoid blowing up context limits on large files (e.g. 800kb+)
+  # 80,000 characters is ~20,000 tokens, safe for most 32k/128k models.
+  max_chars = 80000
+  safe_rfp_text = rfp_text[:max_chars] if len(rfp_text) > max_chars else rfp_text
+
   analyst = create_requirements_analyst_agent()
   retriever = create_technical_retrieval_agent()
   writer = create_proposal_writer_agent()
 
-  analyst_task = create_requirements_analyst_task(analyst, rfp_text)
+  analyst_task = create_requirements_analyst_task(analyst, safe_rfp_text)
   retriever_task = create_technical_retrieval_task(
     retriever,
     "Use the Requirements Analyst task output from context."
   )
   writer_task = create_proposal_writer_task(
     writer,
-    rfp_text,
+    safe_rfp_text,
     "Use the Technical Retrieval Specialist task output from context."
   )
 

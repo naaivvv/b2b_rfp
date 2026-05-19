@@ -30,7 +30,7 @@
 | AI Agents | CrewAI (Python) |
 | Agent API | FastAPI (Python) |
 | Embeddings | HuggingFace `BAAI/bge-small-en-v1.5` (local via sentence-transformers) |
-| LLM | Groq `llama3-70b-8192` (via ChatGroq) |
+| LLM | OpenRouter `auto` (via CrewAI `LLM`) |
 | PDF Parsing | pdfplumber (Python) |
 | Rich Text Editor | TipTap |
 | Export | jsPDF or docx npm package |
@@ -144,7 +144,7 @@ N8N_WEBHOOK_URL=
 
 ### Agents (`agents/.env`)
 ```
-GROQ_API_KEY=
+OPENROUTER_API_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ```

@@ -2,14 +2,14 @@ from crewai import Agent, Task
 
 
 try:
-  from agents.llm import get_fallback_llm
+  from agents.llm import get_openrouter_llm
 except ImportError:
-  from agents.agents.llm import get_fallback_llm
+  from agents.agents.llm import get_openrouter_llm
 
 
 def create_proposal_writer_agent() -> Agent:
   return Agent(
-    llm=get_fallback_llm(),
+    llm=get_openrouter_llm(),
     role="Proposal Writer",
     goal="Draft winning, compliant enterprise proposals",
     backstory=(

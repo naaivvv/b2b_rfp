@@ -21,7 +21,7 @@ The application has four moving parts:
 3. **Python agents API** in `agents/`
    - FastAPI exposes `GET /health` and `POST /process-rfp`.
    - CrewAI runs Analyst -> Retriever -> Writer.
-   - Groq provides LLM calls, and HuggingFace provides local embeddings.
+   - OpenRouter provides LLM calls, and HuggingFace provides local embeddings.
    - Supabase pgvector provides retrieval.
 
 4. **n8n**
@@ -69,9 +69,9 @@ Install these outside the project directory:
 4. **Supabase project**
    - You need the project URL, anon public key, service role key, SQL editor, Storage, and Realtime.
 
-5. **Groq API account**
+5. **OpenRouter API account**
    - You need an API key with access to:
-     - the configured CrewAI LLM, currently `llama3-70b-8192` by project convention.
+     - the configured CrewAI LLM, currently `openrouter/auto`.
    - Embeddings are generated locally using HuggingFace's `sentence-transformers` and do not require an API key.
 
 6. **n8n**
@@ -82,12 +82,12 @@ Install these outside the project directory:
 
 ## 2. Required API Keys And Credentials
 
-### Groq
+### OpenRouter
 
-Create a Groq API key and store it only in `agents/.env`:
+Create an OpenRouter API key and store it only in `agents/.env`:
 
 ```env
-GROQ_API_KEY=gsk_...
+OPENROUTER_API_KEY=sk-or-...
 ```
 
 ### Supabase
@@ -156,7 +156,7 @@ Notes:
 Create or update:
 
 ```env
-GROQ_API_KEY=gsk_...
+OPENROUTER_API_KEY=sk-or-...
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
@@ -333,7 +333,6 @@ pip install -r requirements.txt
 Required Python packages are listed in `agents/requirements.txt`:
 
 ```txt
-langchain-groq
 sentence-transformers
 pdfplumber
 python-dotenv
@@ -1044,11 +1043,11 @@ Check `FASTAPI_URL`.
   FASTAPI_URL=http://host.docker.internal:8000
   ```
 
-### FastAPI returns a Groq error
+### FastAPI returns an OpenRouter error
 
 Check:
 
-- `GROQ_API_KEY` is present in `agents/.env`.
+- `OPENROUTER_API_KEY` is present in `agents/.env`.
 - The key has available credits.
 - The model used by CrewAI is available to the account.
 
@@ -1105,7 +1104,7 @@ npm run dev
 
 ## 14. Security Notes
 
-- Never commit `.env`, `.env.local`, service role keys, or Groq API keys.
+- Never commit `.env`, `.env.local`, service role keys, or OpenRouter API keys.
 - `SUPABASE_SERVICE_ROLE_KEY` belongs only in server-side environments:
   - `frontend/.env.local` for Next.js route handlers.
   - `agents/.env`.
@@ -1127,7 +1126,7 @@ Before using this with real business data:
 - Use HTTPS for FastAPI and n8n.
 - Store secrets in platform secret managers.
 - Add n8n workflow error branches that set `rfp_documents.status = error`.
-- Add retry policies for Groq, Supabase, and FastAPI calls.
+- Add retry policies for OpenRouter, Supabase, and FastAPI calls.
 - Add file size limits and virus scanning for PDF uploads.
 - Add structured logging for the agents service.
 - Add automated tests for route handlers and ingestion.

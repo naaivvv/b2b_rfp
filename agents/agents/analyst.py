@@ -8,14 +8,14 @@ ANALYST_JSON_SCHEMA = (
 
 
 try:
-  from agents.llm import get_fallback_llm
+  from agents.llm import get_openrouter_llm
 except ImportError:
-  from agents.agents.llm import get_fallback_llm
+  from agents.agents.llm import get_openrouter_llm
 
 
 def create_requirements_analyst_agent() -> Agent:
   return Agent(
-    llm=get_fallback_llm(),
+    llm=get_openrouter_llm(),
     role="Requirements Analyst",
     goal="Extract hard constraints from an RFP document",
     backstory=(

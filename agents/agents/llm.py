@@ -1,13 +1,8 @@
 from crewai import LLM
 
-def get_fallback_llm() -> LLM:
+
+def get_openrouter_llm() -> LLM:
   """
-  Returns a CrewAI LLM instance configured with Groq as the primary provider
-  and OpenRouter as the fallback.
+  Returns a CrewAI LLM instance configured to use OpenRouter exclusively.
   """
-  return LLM(
-    model="groq/llama-3.3-70b-versatile",
-    fallbacks=[
-      {"model": "openrouter/auto"}
-    ]
-  )
+  return LLM(model="openrouter/auto")
