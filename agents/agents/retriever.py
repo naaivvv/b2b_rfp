@@ -8,6 +8,7 @@ except ImportError:
 
 def create_technical_retrieval_agent() -> Agent:
   return Agent(
+    llm="groq/llama-3.3-70b-versatile",
     role="Technical Retrieval Specialist",
     goal=(
       "Retrieve the most relevant internal company knowledge for each RFP "

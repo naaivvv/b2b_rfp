@@ -22,7 +22,7 @@ create table public.proposals (
 create table public.knowledge_chunks (
   id uuid primary key default gen_random_uuid(),
   content text not null,
-  embedding vector(1536) not null,
+  embedding vector(384) not null,
   source_doc text not null,
   category text not null,
   created_at timestamptz not null default now()
@@ -34,7 +34,7 @@ using ivfflat (embedding vector_cosine_ops)
 with (lists = 100);
 
 create or replace function public.match_chunks(
-  query_embedding vector(1536),
+  query_embedding vector(384),
   match_count int
 )
 returns table (

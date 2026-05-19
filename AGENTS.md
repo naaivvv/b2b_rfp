@@ -29,8 +29,8 @@
 | Automation | n8n (self-hosted via Docker or n8n Cloud) |
 | AI Agents | CrewAI (Python) |
 | Agent API | FastAPI (Python) |
-| Embeddings | OpenAI `text-embedding-3-small` (default) |
-| LLM | OpenAI GPT-4o (default for agents) |
+| Embeddings | HuggingFace `BAAI/bge-small-en-v1.5` (local via sentence-transformers) |
+| LLM | Groq `llama3-70b-8192` (via ChatGroq) |
 | PDF Parsing | pdfplumber (Python) |
 | Rich Text Editor | TipTap |
 | Export | jsPDF or docx npm package |
@@ -106,7 +106,7 @@
 |---|---|---|
 | id | uuid (PK) | |
 | content | text | Raw chunk text |
-| embedding | vector(1536) | pgvector column |
+| embedding | vector(384) | pgvector column |
 | source_doc | text | Origin file name |
 | category | text | e.g. `technical`, `legal`, `past_rfp` |
 | created_at | timestamptz | |
@@ -144,7 +144,7 @@ N8N_WEBHOOK_URL=
 
 ### Agents (`agents/.env`)
 ```
-OPENAI_API_KEY=
+GROQ_API_KEY=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
@@ -192,7 +192,7 @@ Update this section manually as phases are completed.
 
 ## Key Constraints & Gotchas
 
-1. **pgvector dimension must match embedding model.** `text-embedding-3-small` = 1536 dimensions. If you switch models, you must drop and recreate the `knowledge_chunks` table.
+1. **pgvector dimension must match embedding model.** `BAAI/bge-small-en-v1.5` = 384 dimensions. If you switch models, you must drop and recreate the `knowledge_chunks` table.
 2. **n8n webhook must be publicly accessible** to receive events from Next.js in production. Use ngrok for local dev.
 3. **Supabase Storage** is used for the raw PDF files. The `rfp_documents.storage_path` column points to the storage object key, not a public URL.
 4. **CrewAI sequential process** — agents run in strict order. Do not attempt parallel execution until Phase 3 is stable.

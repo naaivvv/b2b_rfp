@@ -3,12 +3,12 @@ from typing import Any, Type
 
 from crewai.tools import BaseTool
 from dotenv import load_dotenv
-from openai import OpenAI
 from pydantic import BaseModel, Field
+from sentence_transformers import SentenceTransformer
 from supabase import Client, create_client
 
 
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 DEFAULT_MATCH_COUNT = 5
 
 
@@ -62,14 +62,10 @@ class VectorSearchTool(BaseTool):
     if not query.strip():
       return "No query provided."
 
-    openai_client = OpenAI()
+    model = SentenceTransformer(EMBEDDING_MODEL)
     supabase = _get_supabase_client()
 
-    embedding_response = openai_client.embeddings.create(
-      model=EMBEDDING_MODEL,
-      input=query
-    )
-    query_embedding = embedding_response.data[0].embedding
+    query_embedding = model.encode(query).tolist()
 
     response = supabase.rpc(
       "match_chunks",

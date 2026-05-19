@@ -47,14 +47,15 @@ function createSupabaseServiceClient() {
 
 export async function PATCH(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const supabase = createSupabaseServiceClient();
     const { error } = await supabase
       .from("rfp_documents")
       .update({ status: "approved" })
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (error) {
       return NextResponse.json(

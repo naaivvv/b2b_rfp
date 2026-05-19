@@ -9,6 +9,7 @@ ANALYST_JSON_SCHEMA = (
 
 def create_requirements_analyst_agent() -> Agent:
   return Agent(
+    llm="groq/llama-3.3-70b-versatile",
     role="Requirements Analyst",
     goal="Extract hard constraints from an RFP document",
     backstory=(

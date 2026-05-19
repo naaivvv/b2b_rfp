@@ -3,11 +3,11 @@ import os
 from typing import Any
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI
+from sentence_transformers import SentenceTransformer
 from supabase import Client, create_client
 
 
-EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 BATCH_SIZE = 100
 
 
@@ -40,7 +40,7 @@ async def embed_and_upsert(
     print("No chunks to embed; skipping upsert.")
     return
 
-  client = AsyncOpenAI()
+  model = SentenceTransformer(EMBEDDING_MODEL)
   supabase = _get_supabase_client()
   total = len(chunks)
 
@@ -51,19 +51,16 @@ async def embed_and_upsert(
     batch_number = (start // BATCH_SIZE) + 1
     print(f"Embedding batch {batch_number}: chunks {start + 1}-{start + len(batch)} of {total}.")
 
-    embedding_response = await client.embeddings.create(
-      model=EMBEDDING_MODEL,
-      input=batch
-    )
+    embeddings = await asyncio.to_thread(model.encode, batch)
 
     records = [
       {
         "content": chunk,
-        "embedding": embedding.embedding,
+        "embedding": embedding.tolist(),
         "source_doc": source_doc,
         "category": category
       }
-      for chunk, embedding in zip(batch, embedding_response.data)
+      for chunk, embedding in zip(batch, embeddings)
     ]
 
     print(f"Upserting batch {batch_number} to Supabase.")

@@ -3,6 +3,7 @@ from crewai import Agent, Task
 
 def create_proposal_writer_agent() -> Agent:
   return Agent(
+    llm="groq/llama-3.3-70b-versatile",
     role="Proposal Writer",
     goal="Draft winning, compliant enterprise proposals",
     backstory=(

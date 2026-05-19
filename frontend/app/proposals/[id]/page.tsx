@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-
-import { ReviewClient } from "./review-client";
+import { ReviewWrapper } from "./review-wrapper";
 
 type RfpDocument = {
   id: string;
@@ -68,14 +67,15 @@ function createSupabaseServiceClient() {
 export default async function ProposalReviewPage({
   params
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = createSupabaseServiceClient();
 
   const { data: rfpDocument } = await supabase
     .from("rfp_documents")
     .select("id,file_name,storage_path,status,created_at")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!rfpDocument) {
@@ -85,7 +85,7 @@ export default async function ProposalReviewPage({
   const { data: proposal } = await supabase
     .from("proposals")
     .select("id,rfp_id,draft_markdown,edited_content,version,updated_at")
-    .eq("rfp_id", params.id)
+    .eq("rfp_id", id)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
@@ -103,7 +103,7 @@ export default async function ProposalReviewPage({
   }
 
   return (
-    <ReviewClient
+    <ReviewWrapper
       rfpDocument={rfpDocument}
       proposal={proposal}
       pdfUrl={signedUrlData.signedUrl}

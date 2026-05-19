@@ -21,7 +21,7 @@ The application has four moving parts:
 3. **Python agents API** in `agents/`
    - FastAPI exposes `GET /health` and `POST /process-rfp`.
    - CrewAI runs Analyst -> Retriever -> Writer.
-   - OpenAI provides embeddings and LLM calls.
+   - Groq provides LLM calls, and HuggingFace provides local embeddings.
    - Supabase pgvector provides retrieval.
 
 4. **n8n**
@@ -69,10 +69,10 @@ Install these outside the project directory:
 4. **Supabase project**
    - You need the project URL, anon public key, service role key, SQL editor, Storage, and Realtime.
 
-5. **OpenAI API account**
+5. **Groq API account**
    - You need an API key with access to:
-     - `text-embedding-3-small`
-     - the configured CrewAI LLM, currently GPT-4o by project convention.
+     - the configured CrewAI LLM, currently `llama3-70b-8192` by project convention.
+   - Embeddings are generated locally using HuggingFace's `sentence-transformers` and do not require an API key.
 
 6. **n8n**
    - Use either n8n Cloud, local n8n via Docker, or local n8n via `npx n8n`.
@@ -82,12 +82,12 @@ Install these outside the project directory:
 
 ## 2. Required API Keys And Credentials
 
-### OpenAI
+### Groq
 
-Create an OpenAI API key and store it only in `agents/.env`:
+Create a Groq API key and store it only in `agents/.env`:
 
 ```env
-OPENAI_API_KEY=sk-...
+GROQ_API_KEY=gsk_...
 ```
 
 ### Supabase
@@ -156,7 +156,7 @@ Notes:
 Create or update:
 
 ```env
-OPENAI_API_KEY=sk-...
+GROQ_API_KEY=gsk_...
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
@@ -213,7 +213,7 @@ create table if not exists public.proposals (
 create table if not exists public.knowledge_chunks (
   id uuid primary key default gen_random_uuid(),
   content text not null,
-  embedding vector(1536) not null,
+  embedding vector(384) not null,
   source_doc text not null,
   category text not null,
   created_at timestamptz not null default now()
@@ -225,7 +225,7 @@ using ivfflat (embedding vector_cosine_ops)
 with (lists = 100);
 ```
 
-Why `1536`: OpenAI `text-embedding-3-small` returns 1536-dimensional embeddings. If you change embedding models, recreate the vector column with the matching dimension.
+Why `384`: HuggingFace `BAAI/bge-small-en-v1.5` returns 384-dimensional embeddings. If you change embedding models, recreate the vector column with the matching dimension.
 
 ### 4.3 Create Vector Search RPC
 
@@ -233,7 +233,7 @@ The Retriever agent calls `match_chunks`. Add this function:
 
 ```sql
 create or replace function public.match_chunks(
-  query_embedding vector(1536),
+  query_embedding vector(384),
   match_count int default 5
 )
 returns table (
@@ -333,7 +333,8 @@ pip install -r requirements.txt
 Required Python packages are listed in `agents/requirements.txt`:
 
 ```txt
-openai
+langchain-groq
+sentence-transformers
 pdfplumber
 python-dotenv
 supabase
@@ -495,7 +496,7 @@ Parsing PDF...
 Parsed X characters.
 Chunking text.
 Created X chunks.
-Embedding X chunks with text-embedding-3-small.
+Embedding X chunks with BAAI/bge-small-en-v1.5.
 Upserting batch...
 Ingestion upsert complete.
 ```
@@ -1043,11 +1044,11 @@ Check `FASTAPI_URL`.
   FASTAPI_URL=http://host.docker.internal:8000
   ```
 
-### FastAPI returns an OpenAI error
+### FastAPI returns a Groq error
 
 Check:
 
-- `OPENAI_API_KEY` is present in `agents/.env`.
+- `GROQ_API_KEY` is present in `agents/.env`.
 - The key has available credits.
 - The model used by CrewAI is available to the account.
 
@@ -1056,7 +1057,7 @@ Check:
 Check:
 
 - `knowledge_chunks` has rows.
-- Embeddings are 1536 dimensions.
+- Embeddings are 384 dimensions.
 - `match_chunks` RPC exists.
 - The source documents are relevant to the RFP.
 
@@ -1104,7 +1105,7 @@ npm run dev
 
 ## 14. Security Notes
 
-- Never commit `.env`, `.env.local`, service role keys, or OpenAI keys.
+- Never commit `.env`, `.env.local`, service role keys, or Groq API keys.
 - `SUPABASE_SERVICE_ROLE_KEY` belongs only in server-side environments:
   - `frontend/.env.local` for Next.js route handlers.
   - `agents/.env`.
@@ -1126,7 +1127,7 @@ Before using this with real business data:
 - Use HTTPS for FastAPI and n8n.
 - Store secrets in platform secret managers.
 - Add n8n workflow error branches that set `rfp_documents.status = error`.
-- Add retry policies for OpenAI, Supabase, and FastAPI calls.
+- Add retry policies for Groq, Supabase, and FastAPI calls.
 - Add file size limits and virus scanning for PDF uploads.
 - Add structured logging for the agents service.
 - Add automated tests for route handlers and ingestion.

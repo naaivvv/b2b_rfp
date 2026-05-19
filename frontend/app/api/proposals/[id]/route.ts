@@ -52,9 +52,10 @@ function createSupabaseServiceClient() {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = (await request.json()) as { edited_content?: unknown };
 
     if (typeof body.edited_content !== "string") {
@@ -68,7 +69,7 @@ export async function PATCH(
     const { data: proposal, error: fetchError } = await supabase
       .from("proposals")
       .select("id,version")
-      .eq("rfp_id", params.id)
+      .eq("rfp_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();

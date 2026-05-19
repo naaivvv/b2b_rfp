@@ -16,6 +16,8 @@ import {
 } from "docx";
 import { ChevronDown, Download, Loader2, Save, CheckCircle2 } from "lucide-react";
 import { Document as PdfDocument, Page, pdfjs } from "react-pdf";
+import "react-pdf/dist/Page/AnnotationLayer.css";
+import "react-pdf/dist/Page/TextLayer.css";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Use the worker from public/ to avoid bundler processing issues
+pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
 type RfpDocument = {
   id: string;
