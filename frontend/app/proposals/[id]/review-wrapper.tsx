@@ -8,8 +8,11 @@ const ReviewClient = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[calc(100vh-73px)] items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+      <div className="flex h-[calc(100dvh-57px)] items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3 animate-fade-in">
+          <Loader2 className="h-6 w-6 animate-spin text-indigo-400" />
+          <span className="text-sm text-slate-500">Loading review workspace...</span>
+        </div>
       </div>
     )
   }

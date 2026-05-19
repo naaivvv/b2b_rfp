@@ -1,9 +1,15 @@
 from crewai import Agent, Task
 
 
+try:
+  from agents.llm import get_fallback_llm
+except ImportError:
+  from agents.agents.llm import get_fallback_llm
+
+
 def create_proposal_writer_agent() -> Agent:
   return Agent(
-    llm="groq/llama-3.3-70b-versatile",
+    llm=get_fallback_llm(),
     role="Proposal Writer",
     goal="Draft winning, compliant enterprise proposals",
     backstory=(

@@ -7,9 +7,15 @@ ANALYST_JSON_SCHEMA = (
 )
 
 
+try:
+  from agents.llm import get_fallback_llm
+except ImportError:
+  from agents.agents.llm import get_fallback_llm
+
+
 def create_requirements_analyst_agent() -> Agent:
   return Agent(
-    llm="groq/llama-3.3-70b-versatile",
+    llm=get_fallback_llm(),
     role="Requirements Analyst",
     goal="Extract hard constraints from an RFP document",
     backstory=(
